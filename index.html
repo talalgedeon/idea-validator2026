@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Startup Idea Validator — AI-Powered Analysis</title>
+<meta name="description" content="Paste your startup idea and get an instant AI-powered validation score across market size, competition, timing, and feasibility.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060609;
+    --surface: rgba(255,255,255,0.022);
+    --surface-hover: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.055);
+    --border-hover: rgba(255,255,255,0.1);
+    --text-primary: #EDEBF4;
+    --text-secondary: #7A7592;
+    --text-muted: #3E3A54;
+    --accent: #C4A1FF;
+    --accent-dim: rgba(196,161,255,0.08);
+    --green: #5EEAD4;
+    --green-dim: rgba(94,234,212,0.07);
+    --red: #FDA4AF;
+    --red-dim: rgba(253,164,175,0.07);
+    --amber: #FCD34D;
+    --amber-dim: rgba(252,211,77,0.07);
+    --serif: 'Instrument Serif', Georgia, serif;
+    --mono: 'Geist Mono', 'SF Mono', monospace;
+    --sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: rgba(196,161,255,0.25); }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Noise overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px;
+  }
+
+  /* ── Ambient glow ── */
+  .ambient {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .ambient .orb {
+    position: absolute; border-radius: 50%; filter: blur(100px);
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+  .ambient .orb:nth-child(1) { width: 500px; height: 500px; top: -12%; right: -8%; background: rgba(196,161,255,0.05); }
+  .ambient .orb:nth-child(2) { width: 400px; height: 400px; bottom: -10%; left: -6%; background: rgba(94,234,212,0.035); animation-delay: -7s; }
+  .ambient .orb:nth-child(3) { width: 300px; height: 300px; top: 45%; left: 55%; background: rgba(253,164,175,0.02); animation-delay: -14s; }
+  .ambient .grid-overlay {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  @keyframes drift {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(30px, -20px) scale(1.08); }
+  }
+
+  /* ── Layout ── */
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 880px; margin: 0 auto;
+    padding: 56px 28px 80px;
+  }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 64px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 18px; border-radius: 100px;
+    border: 1px solid rgba(196,161,255,0.12);
+    background: rgba(196,161,255,0.04);
+    margin-bottom: 28px;
+  }
+  .badge .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2.5s ease infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .badge span {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px;
+    color: var(--accent); text-transform: uppercase; font-weight: 500;
+  }
+  .header h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(42px, 7vw, 64px); line-height: 1;
+    letter-spacing: -0.02em; margin-bottom: 18px;
+  }
+  .header h1 .line1 { color: var(--text-primary); display: block; }
+  .header h1 .line2 {
+    display: block;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header p {
+    font-size: 15px; color: var(--text-secondary);
+    max-width: 400px; margin: 0 auto; line-height: 1.7; font-weight: 400;
+  }
+
+  /* ── Glass cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    transition: all 0.4s var(--ease);
+  }
+  .card:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-hover);
+  }
+
+  /* ── Input area ── */
+  .input-shell {
+    border-radius: 22px; padding: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  }
+  .input-shell:focus-within {
+    border-color: rgba(196,161,255,0.2);
+    box-shadow: 0 0 0 6px rgba(196,161,255,0.04);
+  }
+  .input-inner {
+    background: rgba(6,6,9,0.55); border-radius: 20px; overflow: hidden;
+  }
+  .input-bar {
+    display: flex; align-items: center; gap: 7px;
+    padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .input-bar .win-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .input-bar .label {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted); letter-spacing: 1.5px; margin-left: 6px;
+  }
+  textarea {
+    width: 100%; border: none; background: transparent;
+    color: var(--text-primary); font-family: var(--sans);
+    font-size: 16px; line-height: 1.75; padding: 22px 26px;
+    resize: vertical; min-height: 150px; outline: none;
+  }
+  textarea::placeholder { color: var(--text-muted); }
+  .input-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 22px 18px;
+  }
+  .char-count {
+    font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+    transition: color 0.3s;
+  }
+  .char-count.warn { color: var(--red); }
+
+  /* ── CTA Button ── */
+  .cta {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #9B7AFF, #7C5CFC);
+    color: #fff; border: none; padding: 13px 34px;
+    border-radius: 13px; font-family: var(--sans);
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    letter-spacing: 0.2px; transition: all 0.35s var(--ease);
+  }
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 36px rgba(124,92,252,0.35);
+  }
+  .cta:active { transform: translateY(0); }
+  .cta::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
+    transform: translateX(-120%); transition: transform 0.7s var(--ease);
+  }
+  .cta:hover::after { transform: translateX(120%); }
+  .cta:disabled {
+    opacity: 0.25; cursor: default;
+    transform: none !important; box-shadow: none !important;
+  }
+  .cta:disabled::after { display: none; }
+  .cta .arrow { margin-left: 8px; opacity: 0.65; }
+
+  /* ── Examples ── */
+  .examples { margin-top: 44px; }
+  .section-rule {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  }
+  .section-rule .line { height: 1px; background: var(--border); }
+  .section-rule .line:first-child { width: 18px; background: rgba(255,255,255,0.08); }
+  .section-rule .line:last-child { flex: 1; }
+  .section-rule .label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 2.5px;
+    color: var(--text-muted); text-transform: uppercase; white-space: nowrap;
+  }
+  .example-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 18px; margin-bottom: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; cursor: pointer;
+    transition: all 0.3s var(--ease);
+  }
+  .example-item:hover {
+    background: var(--accent-dim);
+    border-color: rgba(196,161,255,0.15);
+    transform: translateX(6px);
+  }
+  .example-item .num {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--accent); opacity: 0.4; min-width: 18px;
+  }
+  .example-item .text {
+    font-size: 13px; color: var(--text-secondary); line-height: 1.55;
+  }
+  .example-item .text strong {
+    color: var(--text-primary); font-weight: 500;
+  }
+  .example-item:hover .text { color: #B8B0D8; }
+  .example-item:hover .text strong { color: #E2DFF0; }
+
+  .dims-legend {
+    display: flex; justify-content: center; gap: 28px; margin-top: 48px;
+  }
+  .dims-legend .dim {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dims-legend .dim .pip {
+    width: 5px; height: 5px; border-radius: 2px; opacity: 0.45;
+  }
+  .dims-legend .dim span {
+    font-family: var(--mono); font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px;
+  }
+
+  /* ── Analyzing ── */
+  .analyzing { padding: 72px 0; text-align: center; }
+  .spinner-wrap { margin-bottom: 52px; display: flex; justify-content: center; }
+  .spinner {
+    position: relative; width: 72px; height: 72px;
+  }
+  .spinner .ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid transparent;
+  }
+  .spinner .ring.outer { border-top-color: var(--accent); animation: spin 1s linear infinite; }
+  .spinner .ring.inner { inset: 8px; border-top-color: var(--green); animation: spin 1.6s linear infinite reverse; }
+  .spinner .ring.bg { border-color: rgba(196,161,255,0.06); }
+  .spinner .core {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .spinner .core .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 14px var(--accent);
+    animation: pulse 1.5s ease infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .steps-list {
+    max-width: 320px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 14px; text-align: left;
+  }
+  .step-item {
+    display: flex; align-items: center; gap: 12px;
+    opacity: 0.15; transform: translateX(-10px);
+    transition: all 0.6s var(--ease-out);
+  }
+  .step-item.active, .step-item.done { opacity: 1; transform: translateX(0); }
+  .step-item .icon-box {
+    width: 18px; height: 18px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); font-size: 8px;
+    transition: all 0.4s var(--ease);
+  }
+  .step-item.done .icon-box {
+    background: var(--green-dim); border-color: rgba(94,234,212,0.25); color: var(--green);
+  }
+  .step-item.active .icon-box {
+    background: var(--accent-dim); border-color: rgba(196,161,255,0.25); color: var(--accent);
+  }
+  .step-item .step-text {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text-muted); letter-spacing: 0.3px;
+    transition: color 0.4s var(--ease);
+  }
+  .step-item.active .step-text, .step-item.done .step-text { color: #C4B5FD; }
+
+  .progress-track {
+    max-width: 320px; margin: 36px auto 0;
+    height: 2px; background: rgba(255,255,255,0.03);
+    border-radius: 2px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    box-shadow: 0 0 14px rgba(196,161,255,0.25);
+    transition: width 0.9s var(--ease);
+  }
+
+  /* ── Results ── */
+  .results { animation: fadeUp 0.55s var(--ease-out); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-14px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .idea-bar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 20px; margin-bottom: 28px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .idea-bar .tag {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--accent); opacity: 0.55; letter-spacing: 1px;
+  }
+  .idea-bar .sep { width: 1px; height: 16px; background: var(--border); }
+  .idea-bar .idea-text {
+    flex: 1; font-size: 13px; color: var(--text-secondary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    line-height: 1.5;
+  }
+  .new-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-secondary); padding: 5px 15px;
+    border-radius: 8px; font-family: var(--mono); font-size: 10px;
+    cursor: pointer; letter-spacing: 1px; white-space: nowrap;
+    transition: all 0.25s var(--ease);
+  }
+  .new-btn:hover {
+    border-color: rgba(196,161,255,0.25); color: var(--accent);
+  }
+
+  /* Overall score card */
+  .score-hero-card {
+    padding: 52px 36px 40px; margin-bottom: 18px;
+    position: relative; overflow: hidden; text-align: center;
+  }
+  .corner-decor {
+    position: absolute; width: 28px; height: 28px;
+  }
+  .corner-decor.tl { top: 18px; left: 18px; border-left: 1px solid rgba(196,161,255,0.12); border-top: 1px solid rgba(196,161,255,0.12); }
+  .corner-decor.br { bottom: 18px; right: 18px; border-right: 1px solid rgba(94,234,212,0.12); border-bottom: 1px solid rgba(94,234,212,0.12); }
+  .score-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 3.5px;
+    color: var(--text-muted); text-transform: uppercase; margin-bottom: 22px;
+  }
+  .hero-number {
+    font-family: var(--serif); font-size: 108px; font-weight: 400;
+    line-height: 1; letter-spacing: -4px; position: relative; display: inline-block;
+  }
+  .hero-suffix {
+    font-family: var(--mono); font-size: 16px; position: absolute;
+    top: 12px; right: -36px; opacity: 0.4;
+  }
+  .grade-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 20px; border-radius: 100px; margin-top: 12px;
+  }
+  .grade-badge .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .grade-badge span {
+    font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 3px;
+  }
+  .summary-text {
+    font-family: var(--sans); font-size: 15px; color: var(--text-secondary);
+    line-height: 1.75; max-width: 540px; margin: 28px auto 0;
+  }
+  .cursor-blink { color: var(--accent); animation: blink 0.8s step-end infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* Dimension cards */
+  .dims-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-bottom: 18px;
+  }
+  .dim-card {
+    padding: 26px 16px; display: flex; flex-direction: column;
+    align-items: center; gap: 12px; text-align: center;
+  }
+  .dim-card .dim-icon {
+    font-family: var(--mono); font-size: 10px; opacity: 0.5;
+  }
+  .dim-card .dim-label {
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    color: var(--text-primary);
+  }
+  .dim-card .dim-desc {
+    font-family: var(--mono); font-size: 8px; color: var(--text-muted);
+    line-height: 1.5; letter-spacing: 0.3px;
+  }
+
+  /* Strengths & Risks */
+  .insights-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 18px;
+  }
+  .insight-card { padding: 24px 22px; }
+  .insight-header {
+    display: flex; align-items: center; gap: 9px; margin-bottom: 18px;
+  }
+  .insight-header .bar { width: 3px; height: 18px; border-radius: 2px; }
+  .insight-header .title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px;
+  }
+  .insight-tag {
+    padding: 12px 16px; border-radius: 12px;
+    font-size: 13px; line-height: 1.55; margin-bottom: 8px;
+  }
+  .insight-tag:last-child { margin-bottom: 0; }
+  .tag-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  }
+  .tag-icon {
+    font-size: 8px; opacity: 0.7; flex-shrink: 0;
+  }
+  .tag-title {
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    color: var(--text-primary); letter-spacing: 0.1px;
+  }
+  .tag-detail {
+    font-family: var(--sans); font-size: 12px; color: var(--text-secondary);
+    line-height: 1.6; padding-left: 16px;
+  }
+  .tag-s { background: var(--green-dim); border: 1px solid rgba(94,234,212,0.12); color: #A7F3D0; }
+  .tag-r { background: var(--red-dim); border: 1px solid rgba(253,164,175,0.12); color: #FECDD3; }
+  .tag-s .tag-title { color: #D1FAE5; }
+  .tag-r .tag-title { color: #FFE4E6; }
+  .tag-s .tag-detail { color: #6EE7B7; }
+  .tag-r .tag-detail { color: #FCA5A5; }
+
+  /* Comparable */
+  .comparable-card {
+    padding: 20px 24px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .comp-icon {
+    width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0;
+    background: var(--accent-dim); border: 1px solid rgba(196,161,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 20px; color: var(--accent);
+  }
+  .comp-label {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 2.5px;
+    color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;
+  }
+  .comp-text { font-size: 14px; color: #A8A3C0; line-height: 1.55; }
+
+  /* Next steps */
+  .steps-card {
+    padding: 24px 26px; margin-bottom: 40px;
+    border-color: rgba(196,161,255,0.06);
+  }
+  .step-row {
+    display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px;
+  }
+  .step-row:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+    background: var(--accent-dim); border: 1px solid rgba(196,161,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 700;
+  }
+  .step-content {
+    font-size: 14px; color: #B8B3D0; line-height: 1.65; padding-top: 5px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center; margin-top: 8px;
+  }
+  .footer-divider {
+    display: flex; justify-content: center; align-items: center;
+    gap: 8px; margin-top: 22px;
+  }
+  .footer-divider .line { width: 24px; height: 1px; background: var(--border); }
+  .footer-divider span {
+    font-family: var(--mono); font-size: 8px; color: #1E1B30;
+    letter-spacing: 1.5px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .dims-grid { grid-template-columns: repeat(2, 1fr); }
+    .insights-grid { grid-template-columns: 1fr; }
+    .dims-legend { flex-wrap: wrap; gap: 14px; }
+    .header h1 { font-size: 38px; }
+    .hero-number { font-size: 80px; }
+    .hero-suffix { right: -28px; font-size: 13px; }
+  }
+
+  /* ── Utility animation classes ── */
+  .anim-fade-up {
+    opacity: 0; transform: translateY(18px);
+    animation: fadeUp 0.5s var(--ease-out) forwards;
+  }
+  .anim-slide-in {
+    opacity: 0; transform: translateX(-14px);
+    animation: slideIn 0.35s var(--ease-out) forwards;
+  }
+
+  /* ── Error ── */
+  .error-bar {
+    margin-top: 14px; padding: 12px 20px;
+    background: var(--red-dim); border: 1px solid rgba(253,164,175,0.12);
+    border-radius: 12px; font-size: 14px; color: var(--red);
+  }
+
+  /* Hide phase containers by default */
+  .phase { display: none; }
+  .phase.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="ambient">
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="grid-overlay"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="badge">
+      <div class="dot"></div>
+      <span>AI-Powered Analysis</span>
+    </div>
+    <h1>
+      <span class="line1">Startup Idea</span>
+      <span class="line2">Validator</span>
+    </h1>
+    <p>Describe your idea. Get an instant AI analysis across four key dimensions of startup viability.</p>
+  </header>
+
+  <!-- ═══ INPUT PHASE ═══ -->
+  <div id="phase-input" class="phase visible">
+    <div class="input-shell">
+      <div class="input-inner">
+        <div class="input-bar">
+          <div class="win-dot" style="background:#F87171;opacity:0.55"></div>
+          <div class="win-dot" style="background:#FBBF24;opacity:0.55"></div>
+          <div class="win-dot" style="background:#5EEAD4;opacity:0.55"></div>
+          <span class="label">IDEA_INPUT</span>
+        </div>
+        <textarea id="idea-input" placeholder="Describe your startup idea in a few sentences..." maxlength="600"></textarea>
+        <div class="input-footer">
+          <span id="char-count" class="char-count">0/600</span>
+          <button id="validate-btn" class="cta" disabled>Validate Idea<span class="arrow">→</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="error-msg" class="error-bar" style="display:none"></div>
+
+    <div class="examples">
+      <div class="section-rule">
+        <div class="line"></div>
+        <span class="label">Try an example</span>
+        <div class="line"></div>
+      </div>
+      <div id="examples-list"></div>
+    </div>
+
+    <div class="dims-legend">
+      <div class="dim"><div class="pip" style="background:#5EEAD4"></div><span>Market Size</span></div>
+      <div class="dim"><div class="pip" style="background:#FDA4AF"></div><span>Competition</span></div>
+      <div class="dim"><div class="pip" style="background:#C4A1FF"></div><span>Timing</span></div>
+      <div class="dim"><div class="pip" style="background:#FCD34D"></div><span>Feasibility</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ ANALYZING PHASE ═══ -->
+  <div id="phase-analyzing" class="phase">
+    <div class="analyzing">
+      <div class="spinner-wrap">
+        <div class="spinner">
+          <div class="ring bg"></div>
+          <div class="ring outer"></div>
+          <div class="ring inner"></div>
+          <div class="core"><div class="dot"></div></div>
+        </div>
+      </div>
+      <div id="steps-container" class="steps-list"></div>
+      <div class="progress-track">
+        <div id="progress-bar" class="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RESULTS PHASE ═══ -->
+  <div id="phase-results" class="phase">
+    <div class="results" id="results-container"></div>
+  </div>
+
+</div>
+
+<script>
+const EXAMPLES = [
+  { short: "AI Wardrobe Stylist", full: "An AI-powered personal stylist app that uses your existing wardrobe photos to suggest daily outfits and recommends affordable new pieces" },
+  { short: "Fractional Advisory Market", full: "A marketplace connecting retired professionals with startups for fractional advisory roles, verified by LinkedIn credentials" },
+  { short: "SaaS Price Negotiator", full: "A browser extension that auto-negotiates SaaS subscription prices by analyzing usage data and competing offers" },
+];
+
+const ANALYZE_STEPS = [
+  "Scanning market landscape...",
+  "Evaluating competitive moats...",
+  "Assessing timing signals...",
+  "Modeling feasibility constraints...",
+  "Synthesizing validation report...",
+];
+
+const DIMS = [
+  { key: "market", label: "Market Size", icon: "◆", color: "#5EEAD4", desc: "TAM & growth trajectory" },
+  { key: "competition", label: "Competition", icon: "◈", color: "#FDA4AF", desc: "Competitive density & moat" },
+  { key: "timing", label: "Timing", icon: "◇", color: "#C4A1FF", desc: "Market readiness & tailwinds" },
+  { key: "feasibility", label: "Feasibility", icon: "○", color: "#FCD34D", desc: "Technical & GTM viability" },
+];
+
+// ── DOM refs ──
+const ideaInput = document.getElementById('idea-input');
+const charCount = document.getElementById('char-count');
+const validateBtn = document.getElementById('validate-btn');
+const errorMsg = document.getElementById('error-msg');
+const examplesList = document.getElementById('examples-list');
+const stepsContainer = document.getElementById('steps-container');
+const progressBar = document.getElementById('progress-bar');
+const resultsContainer = document.getElementById('results-container');
+
+const phases = {
+  input: document.getElementById('phase-input'),
+  analyzing: document.getElementById('phase-analyzing'),
+  results: document.getElementById('phase-results'),
+};
+
+function showPhase(name) {
+  Object.values(phases).forEach(p => p.classList.remove('visible'));
+  phases[name].classList.add('visible');
+}
+
+// ── Input handling ──
+ideaInput.addEventListener('input', () => {
+  const len = ideaInput.value.length;
+  charCount.textContent = `${len}/600`;
+  charCount.classList.toggle('warn', len > 520);
+  validateBtn.disabled = !ideaInput.value.trim();
+});
+
+// ── Examples ──
+EXAMPLES.forEach((ex, i) => {
+  const div = document.createElement('div');
+  div.className = 'example-item';
+  div.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span><span class="text"><strong>${ex.short}</strong> <span style="opacity:0.4;margin:0 6px">—</span> ${ex.full.slice(ex.short.length)}</span>`;
+  div.addEventListener('click', () => {
+    ideaInput.value = ex.full;
+    ideaInput.dispatchEvent(new Event('input'));
+    ideaInput.focus();
+  });
+  examplesList.appendChild(div);
+});
+
+// ── Analyzing animation ──
+let analyzeInterval;
+function startAnalyzing() {
+  stepsContainer.innerHTML = '';
+  ANALYZE_STEPS.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'step-item';
+    div.id = `astep-${i}`;
+    div.innerHTML = `<span class="icon-box"></span><span class="step-text">${s}</span>`;
+    stepsContainer.appendChild(div);
+  });
+  progressBar.style.width = '0%';
+
+  let current = 0;
+  function advance() {
+    if (current > 0) {
+      const prev = document.getElementById(`astep-${current-1}`);
+      prev.classList.remove('active'); prev.classList.add('done');
+      prev.querySelector('.icon-box').textContent = '✓';
+    }
+    if (current < ANALYZE_STEPS.length) {
+      const el = document.getElementById(`astep-${current}`);
+      el.classList.add('active');
+      el.querySelector('.icon-box').textContent = '●';
+      progressBar.style.width = `${((current+1)/ANALYZE_STEPS.length)*100}%`;
+      current++;
+    }
+  }
+  advance();
+  analyzeInterval = setInterval(advance, 950);
+}
+function stopAnalyzing() { clearInterval(analyzeInterval); }
+
+// ── SVG Arc builder ──
+// Uses a full circle. Score maps directly: 35 score = 35% of circumference filled.
+function createArc(score, color, size = 80) {
+  const sw = 5, r = (size - sw*2) / 2;
+  const c = 2 * Math.PI * r;
+  const targetOffset = c - (score / 100) * c; // how much to leave unfilled
+  const id = `arc-${Math.random().toString(36).slice(2)}`;
+
+  return `
+    <div style="position:relative;width:${size}px;height:${size}px">
+      <svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${sw}"/>
+        <circle class="score-arc" data-target-offset="${targetOffset}" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-dasharray="${c}" stroke-dashoffset="${c}" stroke-linecap="round" style="transition:stroke-dashoffset 1.6s cubic-bezier(0.16,1,0.3,1);filter:drop-shadow(0 0 8px ${color}44)"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <span class="counter" data-target="${score}" style="font-family:var(--mono);font-size:${size*0.28}px;font-weight:700;color:${color};line-height:1">0</span>
+        <span style="font-family:var(--mono);font-size:${size*0.1}px;color:${color};opacity:0.35;margin-top:2px">/ 100</span>
+      </div>
+    </div>
+  `;
+}
+
+// ── Animate counters ──
+function animateCounters() {
+  document.querySelectorAll('.counter').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    const dur = 1500, start = performance.now();
+    function tick(now) {
+      const p = Math.min((now - start) / dur, 1);
+      const e = 1 - Math.pow(1 - p, 4);
+      el.textContent = Math.round(e * target);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// ── Animate arc strokes ──
+function animateArcs() {
+  setTimeout(() => {
+    document.querySelectorAll('.score-arc').forEach(el => {
+      const targetOffset = parseFloat(el.dataset.targetOffset);
+      el.style.strokeDashoffset = targetOffset;
+    });
+  }, 150);
+}
+
+// ── Grade helper ──
+function getGrade(score) {
+  if (score >= 85) return { label: 'STRONG SIGNAL', color: '#5EEAD4' };
+  if (score >= 70) return { label: 'PROMISING', color: '#C4A1FF' };
+  if (score >= 50) return { label: 'NEEDS REFINEMENT', color: '#FCD34D' };
+  return { label: 'HIGH RISK', color: '#FDA4AF' };
+}
+
+// ── Render Results ──
+function renderResults(data, ideaText) {
+  const g = getGrade(data.overall);
+  let html = '';
+
+  // Idea bar
+  html += `
+    <div class="idea-bar">
+      <span class="tag">IDEA</span>
+      <div class="sep"></div>
+      <span class="idea-text">${ideaText}</span>
+      <button class="new-btn" onclick="resetToInput()">NEW</button>
+    </div>
+  `;
+
+  // Hero score
+  html += `
+    <div class="card score-hero-card">
+      <div class="corner-decor tl"></div>
+      <div class="corner-decor br"></div>
+      <div class="score-label">Validation Score</div>
+      <div class="hero-number" style="color:${g.color};text-shadow:0 0 80px ${g.color}33,0 0 160px ${g.color}11">
+        <span class="counter" data-target="${data.overall}">0</span>
+        <span class="hero-suffix" style="color:${g.color}">/100</span>
+      </div>
+      <div class="grade-badge" style="background:${g.color}0D;border:1px solid ${g.color}22">
+        <div class="dot" style="background:${g.color};box-shadow:0 0 8px ${g.color}"></div>
+        <span style="color:${g.color}">${g.label}</span>
+      </div>
+      <div class="summary-text" id="summary-target"></div>
+    </div>
+  `;
+
+  // Dimension cards
+  html += '<div class="dims-grid">';
+  DIMS.forEach((d, i) => {
+    const score = data.scores[d.key];
+    html += `
+      <div class="card dim-card anim-fade-up" data-score="${score}" style="animation-delay:${0.1 + i*0.08}s">
+        ${createArc(score, d.color, 78)}
+        <div>
+          <div class="dim-icon" style="color:${d.color}">${d.icon}</div>
+          <div class="dim-label">${d.label}</div>
+          <div class="dim-desc">${d.desc}</div>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  // Strengths & Risks
+  html += '<div class="insights-grid">';
+  html += `
+    <div class="card insight-card anim-fade-up" style="animation-delay:0.35s;border-color:rgba(94,234,212,0.06)">
+      <div class="insight-header">
+        <div class="bar" style="background:var(--green)"></div>
+        <span class="title" style="color:var(--green)">STRENGTHS</span>
+      </div>
+      ${data.strengths.map((s,i) => {
+        const title = typeof s === 'object' ? s.title : s;
+        const detail = typeof s === 'object' ? s.detail : '';
+        return `<div class="insight-tag tag-s anim-slide-in" style="animation-delay:${0.4+i*0.07}s">
+          <div class="tag-row"><span class="tag-icon" style="color:var(--green)">▲</span><span class="tag-title">${title}</span></div>
+          ${detail ? `<div class="tag-detail">${detail}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  html += `
+    <div class="card insight-card anim-fade-up" style="animation-delay:0.4s;border-color:rgba(253,164,175,0.06)">
+      <div class="insight-header">
+        <div class="bar" style="background:var(--red)"></div>
+        <span class="title" style="color:var(--red)">RISKS</span>
+      </div>
+      ${data.risks.map((r,i) => {
+        const title = typeof r === 'object' ? r.title : r;
+        const detail = typeof r === 'object' ? r.detail : '';
+        return `<div class="insight-tag tag-r anim-slide-in" style="animation-delay:${0.45+i*0.07}s">
+          <div class="tag-row"><span class="tag-icon" style="color:var(--red)">▼</span><span class="tag-title">${title}</span></div>
+          ${detail ? `<div class="tag-detail">${detail}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  html += '</div>';
+
+  // Comparable
+  if (data.comparable) {
+    html += `
+      <div class="card comparable-card anim-fade-up" style="animation-delay:0.5s">
+        <div class="comp-icon">≈</div>
+        <div>
+          <div class="comp-label">Comparable Company</div>
+          <div class="comp-text">${data.comparable}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Next steps
+  html += `
+    <div class="card steps-card anim-fade-up" style="animation-delay:0.55s">
+      <div class="insight-header">
+        <div class="bar" style="background:var(--accent)"></div>
+        <span class="title" style="color:var(--accent)">NEXT STEPS</span>
+      </div>
+      ${data.nextSteps.map((s,i) => `
+        <div class="step-row anim-slide-in" style="animation-delay:${0.6+i*0.07}s">
+          <div class="step-num">${i+1}</div>
+          <div class="step-content">${s}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Footer
+  html += `
+    <div class="footer anim-fade-up" style="animation-delay:0.7s">
+      <button class="cta" onclick="resetToInput()">Validate Another Idea <span class="arrow">→</span></button>
+      <div class="footer-divider">
+        <div class="line"></div>
+        <span>POWERED BY CLAUDE AI • DIRECTIONAL SCORES</span>
+        <div class="line"></div>
+      </div>
+    </div>
+  `;
+
+  resultsContainer.innerHTML = html;
+
+  // Animate
+  setTimeout(() => {
+    animateCounters();
+    animateArcs();
+    typewrite(document.getElementById('summary-target'), data.summary, 14);
+  }, 200);
+}
+
+// ── Typewriter ──
+function typewrite(el, text, speed) {
+  let i = 0;
+  el.innerHTML = '<span class="cursor-blink">▎</span>';
+  const iv = setInterval(() => {
+    if (i < text.length) {
+      el.innerHTML = text.slice(0, ++i) + '<span class="cursor-blink">▎</span>';
+    } else {
+      el.innerHTML = text;
+      clearInterval(iv);
+    }
+  }, speed);
+}
+
+// ── API Call (via Netlify serverless function) ──
+async function analyzeIdea() {
+  const text = ideaInput.value.trim();
+  if (!text) return;
+
+  errorMsg.style.display = 'none';
+  showPhase('analyzing');
+  startAnalyzing();
+
+  try {
+    const res = await fetch('/.netlify/functions/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idea: text })
+    });
+
+    const parsed = await res.json();
+
+    if (!res.ok) throw new Error(parsed.error || 'API error');
+
+    stopAnalyzing();
+    showPhase('results');
+    renderResults(parsed, text);
+
+  } catch (e) {
+    console.error(e);
+    stopAnalyzing();
+    showPhase('input');
+    errorMsg.textContent = 'Analysis failed — please try again.';
+    errorMsg.style.display = 'block';
+  }
+}
+
+function resetToInput() {
+  ideaInput.value = '';
+  ideaInput.dispatchEvent(new Event('input'));
+  showPhase('input');
+  resultsContainer.innerHTML = '';
+}
+
+// ── Event listeners ──
+validateBtn.addEventListener('click', analyzeIdea);
+ideaInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && ideaInput.value.trim()) {
+    e.preventDefault();
+    analyzeIdea();
+  }
+});
+</script>
+</body>
+</html>
